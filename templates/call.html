@@ -27,6 +27,7 @@
                     <th>File Name</th>
                     <th>Play</th>
                     <th>Actions</th>
+                    <th>Analysis</th>
                 </tr>
             </thead>
             <tbody>
@@ -35,7 +36,7 @@
                     <td>{{ forloop.counter }}</td>
                     <td>{{ audio.audio.name }}</td>
                     <td>
-                        <audio controls>
+                        <audio id="audio-{{ audio.id }}" controls>
                             <source src="{{ audio.audio.url }}" type="audio/mpeg">
                             Your browser does not support the audio element.
                         </audio>
@@ -48,12 +49,17 @@
                                 Delete
                             </button>
                         </form>
-                        <div class="details" id="details-{{ audio.id }}" style="display: none;">
-                            <p><strong>Uploaded At:</strong> {{ audio.uploaded_at }}</p>
-                            <p><strong>File Path:</strong> {{ audio.audio.url }}</p>
+    
+                    </td>
+                    <td>
+                        <div class="analysis-results" id="analysis-{{ audio.id }}">
+                            <p><strong>Transcription:</strong> <span id="transcription-{{ audio.id }}"></span></p>
+                            <p><strong>Keywords:</strong> <span id="keywords-{{ audio.id }}"></span></p>
+                            <p><strong>Emotion:</strong> <span id="emotion-{{ audio.id }}"></span></p>
+                            <p><strong>Pitch:</strong> <span id="pitch-{{ audio.id }}"></span></p>
+                            <img id="pitch-plot-{{ audio.id }}" style="width: 300px; display: none;" />
                         </div>
                     </td>
-                    
                 </tr>
                 {% endfor %}
             </tbody>
@@ -66,17 +72,34 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        document.querySelectorAll(".details-btn").forEach(button => {
-            button.addEventListener("click", function () {
-                const audioId = this.getAttribute("data-audio-id");
-                const detailsDiv = document.getElementById("details-" + audioId);
-                if (detailsDiv.style.display === "none") {
-                    detailsDiv.style.display = "block";
-                } else {
-                    detailsDiv.style.display = "none";
-                }
+        document.querySelectorAll("audio").forEach(audioElement => {
+            const audioId = audioElement.getAttribute("id").split("-")[1];
+
+            audioElement.addEventListener("timeupdate", function () {
+                const currentTime = Math.floor(audioElement.currentTime); // Get current playback time (in seconds)
+
+                fetch(`/analyze_audio/${audioId}/?time=${currentTime}`, { method: "GET" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error("Error:", data.error);
+                        return;
+                    }
+                    document.getElementById("transcription-" + audioId).innerText = data.transcript.map(t => t.text).join(" ");
+                    document.getElementById("keywords-" + audioId).innerText = data.keywords.join(", ");
+                    document.getElementById("emotion-" + audioId).innerText = data.transcript.length > 0 ? data.transcript[0].emotion : "N/A";
+                    document.getElementById("pitch-" + audioId).innerText = data.pitch_values.slice(0, 5).join(", ") + "...";
+
+                    if (data.pitch_plot) {
+                        document.getElementById("pitch-plot-" + audioId).src = "/" + data.pitch_plot;
+                        document.getElementById("pitch-plot-" + audioId).style.display = "block";
+                    }
+                })
+                .catch(error => console.error("Error:", error));
             });
         });
     });
 </script>
+
+
 {% endblock %}

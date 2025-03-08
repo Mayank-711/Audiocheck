@@ -28,6 +28,7 @@ urlpatterns = [
     path('call/',call,name='call'),
     path('logout/',user_logout,name='logout'),
     path("delete_audio/<int:audio_id>/", delete_audio, name="delete_audio"),
+    path("analyze_audio/<int:audio_id>/",analyze_audio,name='analyze_audio')
 
 ]
 
