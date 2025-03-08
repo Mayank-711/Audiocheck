@@ -1,27 +1,42 @@
-{% load static %}
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audiocheck</title>
-    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <title>{% block title %}AudioCheck{% endblock %}</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/base.css' %}">
+    <link rel="icon" href="{% static 'images/logo.png' %}" type="image/png">
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
     <nav class="navbar">
-        <div class="logo">AI Bot</div>
-        <div class="hamburger" onclick="toggleMenu()">☰</div>
+        <div class="navbar">
+            <div class="logo-container">
+              <img src="{% static 'images/logo.png' %}" alt="AudioCheck Logo" class="logo-image">
+              <span class="logo">AudioCheck</span>
+            </div>
+            <!-- rest of your navbar code -->
+          
+        <button class="nav-toggle" aria-label="Toggle navigation">
+            ☰
+        </button>
         <ul class="nav-links">
-            
             <li><a href="{% url 'home' %}">Home</a></li>
-            <li><a href="{% url 'call' %}">Calls</a></li>
-            <li><a href="{% url 'login' %}">Login</a></li>
+            <li><a href="{% url 'call' %}">Call</a></li>
+            
+            {% if user.is_authenticated %}
+                <li><a href="{% url 'logout' %}" class="logout-btn">Logout</a></li>
+            {% else %}
+                <li><a href="{% url 'login' %}">Login</a></li>
+            {% endif %}
         </ul>
     </nav>
-    
-    <div class="container">
+
+    <main>
         {% block content %}{% endblock %}
-    </div>
+    </main>
+
+    <script src="{% static 'js/navbar.js' %}"></script>
 </body>
 </html>

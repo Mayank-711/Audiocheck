@@ -186,7 +186,7 @@ def analyze_audio(request, audio_id):
 
         # ✅ Get current time from request
         current_time = int(request.GET.get("time", 0))  # Default to 0 if not provided
-        chunk_duration = 5  # Process 5-second chunks
+        chunk_duration = 3  # Process 5-second chunks
         print(f"🔹 Processing chunk from {current_time}s to {current_time + chunk_duration}s")
 
         # ✅ Load only the required chunk of audio
@@ -205,6 +205,7 @@ def analyze_audio(request, audio_id):
 
         print("🔹 Running Whisper transcription on extracted chunk...")
         result = whisper_model.transcribe(tmp_audio_path, language="en")
+        print(result)
         os.remove(tmp_audio_path)  # Cleanup temporary file
 
         transcript_text = result.get("text", "").strip()
@@ -290,7 +291,7 @@ def extract_pitch_view(request, audio_id):
 
         # ✅ Get current time from request
         current_time = int(request.GET.get("time", 0))  # Default to 0 if not provided
-        chunk_duration = 5  # Process 5-second chunks
+        chunk_duration = 3  # Process 5-second chunks
         print(f"🔹 Processing chunk from {current_time}s to {current_time + chunk_duration}s")
 
         # ✅ Load only the required chunk of audio

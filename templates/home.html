@@ -1,14 +1,91 @@
 {% extends "base.html" %}
 
-{%load static%}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/home.css' %}">
+{% endblock %}
 
 {% block content %}
-<div class="dashboard">
-    <h1>AudioCheck</h1>
-    <div class="cards">
-        <div class="card">Total Calls: 150</div>
-        <div class="card">Successful Resolutions: 90</div>
-        <div class="card">Pending Calls: 30</div>
-    </div>
+<div class="video-background">
+    <video autoplay muted loop id="background-video">
+        <source src="{% static 'images/video1.mp4' %}" type="video/mp4">
+        <!-- Browser will fallback to poster if video doesn't load -->
+        Your browser does not support the video tag.
+    </video>
+    <!-- Separate fallback background that shows if video fails -->
+    <div class="fallback-bg"></div>
+    <div class="video-overlay"></div>
+</div>
+
+<div class="landing-page">
+    <header class="hero">
+        <div class="container">
+            <h1 class="hero-title">AudioCheck</h1>
+            <p class="hero-tagline">AI-Powered Call Centre Voice Bot</p>
+            <p class="hero-subtitle">Enhance customer interactions with seamless AI-driven call analysis.</p>
+            <div class="cta-container">
+                <a href="{% url 'call' %}" class="cta-button">Get Started</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Rest of the content remains the same -->
+    <section id="features" class="features-section">
+        <div class="container">
+            <h2 class="section-title">Powerful Features</h2>
+            
+            <div class="bento-grid">
+                <div class="bento-item feature-card">
+                    <div class="icon-container">
+                        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 6V18M6 12H18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h3>Real-Time Analytics</h3>
+                    <p>Monitor call performance with detailed analytics and live insights.</p>
+                </div>
+
+                <div class="bento-item feature-card">
+                    <div class="icon-container">
+                        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8 13H16M8 17H12M12 3V7M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h3>Sentiment Analysis</h3>
+                    <p>Understand customer sentiment patterns for improved interactions.</p>
+                </div>
+
+                <div class="bento-item feature-card spotlight">
+                    <div class="icon-container">
+                        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 16.5V21M8 12V21M4 18V21M16 8.5V21M20 14V21M15 4.6C15 5.96 13.657 7 12 7C10.343 7 9 5.96 9 4.6C9 3.24 10.343 2 12 2C13.657 2 15 3.24 15 4.6Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h3>Voice Pattern Recognition</h3>
+                    <p>Advanced AI algorithms detect speech patterns, tone variations, and emotional cues to provide deeper customer insights.</p>
+                </div>
+
+                <div class="bento-item feature-card">
+                    <div class="icon-container">
+                        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9 12H15M12 9V15M3 12C3 16.9706 7.02944 21 12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h3>Automated Reporting</h3>
+                    <p>Generate comprehensive call reports with actionable insights.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 AudioCheck. Designed for next-gen customer engagement.</p>
+            </div>
+        </div>
+    </footer>
 </div>
 {% endblock %}
