@@ -129,6 +129,7 @@
                             <div class="analysis-content">
                                 <h4>Pitch</h4>
                                 <p id="pitch-{{ audio.id }}"></p>
+                                <p id="pitch-history-{{ audio.id }}"></p>
                             </div>
                         </div>
                     </div>
@@ -146,73 +147,109 @@
 
 
 <script>
-        document.addEventListener("DOMContentLoaded", function () {
-    document.querySelectorAll("audio").forEach(audioElement => {
-        const audioId = audioElement.getAttribute("id").split("-")[1];
-        let lastQueriedTime = -1;
-        const queryInterval = 3; // Fetch new data every 3 seconds
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll("audio").forEach(audioElement => {
+            const audioId = audioElement.getAttribute("id").split("-")[1];
+            let lastQueriedTime = -1;
+            const queryInterval = 3; // Fetch new data every 3 seconds
 
-        let transcriptHistory = [];
-        let emotionHistory = [];
-        let sentimentHistory = [];
+            let transcriptHistory = [];
+            let emotionHistory = [];
+            let sentimentHistory = [];
+            let pitchHistory = []; // Store pitch values, "Hard" and "Low" labels
+            let isHardFlagged = false; // Track if pitch was flagged as "Hard"
+            let isLowFlagged = false;  // Track if pitch was flagged as "Low"
 
-        audioElement.addEventListener("timeupdate", function () {
-            const currentTime = Math.floor(audioElement.currentTime);
+            audioElement.addEventListener("timeupdate", function () {
+                const currentTime = Math.floor(audioElement.currentTime);
 
-            if (currentTime % queryInterval === 0 && currentTime !== lastQueriedTime) {
-                lastQueriedTime = currentTime;
+                if (currentTime % queryInterval === 0 && currentTime !== lastQueriedTime) {
+                    lastQueriedTime = currentTime;
 
-                // ✅ Fetch Transcription
-                fetch(`/analyze_audio/${audioId}/?time=${currentTime}`, { method: "GET" })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.error) {
-                            console.error("❌ Transcription Error:", data.error);
-                            return;
-                        }
-                        let newText = data.transcript;
-                        transcriptHistory.push(`<span class="highlight-new">${newText}</span>`);
-                        document.getElementById(`transcription-${audioId}`).innerHTML = transcriptHistory.join(" ");
+                    // ✅ Fetch Transcription
+                    fetch(`/analyze_audio/${audioId}/?time=${currentTime}`, { method: "GET" })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.error) {
+                                console.error("❌ Transcription Error:", data.error);
+                                return;
+                            }
 
-                        // ✅ Fetch Emotion & Sentiment Separately
-                        fetch(`/analyze_text/?text=${encodeURIComponent(newText)}`, { method: "GET" })
-                            .then(response => response.json())
-                            .then(analysisData => {
-                                if (analysisData.error) {
-                                    console.error("❌ Analysis Error:", analysisData.error);
-                                    return;
+                            let newText = data.transcript;
+                            transcriptHistory.push(`<span class="highlight-new">${newText}</span>`);
+                            document.getElementById(`transcription-${audioId}`).innerHTML = transcriptHistory.join(" ");
+
+                            // ✅ Fetch Emotion & Sentiment Separately
+                            fetch(`/analyze_text/?text=${encodeURIComponent(newText)}`, { method: "GET" })
+                                .then(response => response.json())
+                                .then(analysisData => {
+                                    if (analysisData.error) {
+                                        console.error("❌ Analysis Error:", analysisData.error);
+                                        return;
+                                    }
+
+                                    let newEmotion = analysisData.emotion || "Neutral";
+                                    emotionHistory.push(`<span class="highlight-new">${newEmotion}</span>`);
+                                    document.getElementById(`emotion-${audioId}`).innerHTML = emotionHistory.join(", ");
+
+                                    let newSentiment = analysisData.sentiment || "Neutral";
+                                    sentimentHistory.push(`<span class="highlight-new">${newSentiment}</span>`);
+                                    document.getElementById(`sentiment-${audioId}`).innerHTML = sentimentHistory.join(", ");
+                                })
+                                .catch(error => console.error("❌ Analysis Fetch error:", error));
+                        })
+                        .catch(error => console.error("❌ Fetch error:", error));
+
+                    // ✅ Fetch Pitch Data
+                    fetch(`/extract_pitch/${audioId}/?time=${currentTime}`, { method: "GET" })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.error) {
+                                console.error("❌ Pitch Error:", data.error);
+                                document.getElementById(`pitch-${audioId}`).innerText = "N/A";
+                                return;
+                            }
+
+                            const currentPitch = data.avg_pitch;
+                            pitchHistory.push(currentPitch); // Add current pitch to the history
+
+                            // ✅ Check if current pitch is 60% greater or lesser than the previous one
+                            if (pitchHistory.length > 1) {
+                                const lastPitch = pitchHistory[pitchHistory.length - 2];
+                                const pitchDifference = (currentPitch - lastPitch) / lastPitch;
+
+                                if (pitchDifference > 0.6 && !isHardFlagged) {
+                                    // If current pitch is more than 60% greater than the last pitch, display "Hard"
+                                    pitchHistory.push("Hard"); // Append "Hard" to history
+                                    document.getElementById(`pitch-${audioId}`).innerText = `(avg: ${currentPitch}Hz) - Hard`;
+                                    isHardFlagged = true; // Mark as hard
+                                    isLowFlagged = false; // Reset Low flag
+                                } else if (pitchDifference < -0.6 && !isLowFlagged) {
+                                    // If pitch goes down by more than 60%, display "Low"
+                                    pitchHistory.push("Low"); // Append "Low" to history
+                                    document.getElementById(`pitch-${audioId}`).innerText = `(avg: ${currentPitch}Hz) - Low`;
+                                    isLowFlagged = true; // Mark as low
+                                    isHardFlagged = false; // Reset Hard flag
+                                } else if (!isHardFlagged && !isLowFlagged) {
+                                    document.getElementById(`pitch-${audioId}`).innerText = `(avg: ${currentPitch}Hz)`;
                                 }
+                            } else {
+                                document.getElementById(`pitch-${audioId}`).innerText = `(avg: ${currentPitch}Hz)`;
+                            }
 
-                                let newEmotion = analysisData.emotion || "Neutral";
-                                emotionHistory.push(`<span class="highlight-new">${newEmotion}</span>`);
-                                document.getElementById(`emotion-${audioId}`).innerHTML = emotionHistory.join(", ");
+                            // Display full pitch history, join all values with commas
+                            const pitchHistoryList = pitchHistory.join(", ");
+                            document.getElementById(`pitch-history-${audioId}`).innerHTML = `Pitch History: ${pitchHistoryList}`;
 
-                                let newSentiment = analysisData.sentiment || "Neutral";
-                                sentimentHistory.push(`<span class="highlight-new">${newSentiment}</span>`);
-                                document.getElementById(`sentiment-${audioId}`).innerHTML = sentimentHistory.join(", ");
-                            })
-                            .catch(error => console.error("❌ Analysis Fetch error:", error));
-                    })
-                    .catch(error => console.error("❌ Fetch error:", error));
-
-                // ✅ Fetch Pitch Data
-                fetch(`/extract_pitch/${audioId}/?time=${currentTime}`, { method: "GET" })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.error) {
-                            console.error("❌ Pitch Error:", data.error);
-                            document.getElementById(`pitch-${audioId}`).innerText = "N/A";
-                            return;
-                        }
-
-                        document.getElementById(`pitch-${audioId}`).innerText = 
-                            `${data.min_pitch}Hz - ${data.max_pitch}Hz (avg: ${data.avg_pitch}Hz)`;
-                    })
-                    .catch(error => console.error("❌ Fetch error:", error));
-            }
+                        })
+                        .catch(error => console.error("❌ Fetch error:", error));
+                }
+            });
         });
     });
-});
-
 </script>
+
+
+
+
 {% endblock %}
