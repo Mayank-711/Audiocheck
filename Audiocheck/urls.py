@@ -29,7 +29,8 @@ urlpatterns = [
     path('logout/',user_logout,name='logout'),
     path("delete_audio/<int:audio_id>/", delete_audio, name="delete_audio"),
     path("analyze_audio/<int:audio_id>/",analyze_audio,name='analyze_audio'),
-    path("extract_pitch/<int:audio_id>/",extract_pitch_view,name='extract_pitch')
+    path("extract_pitch/<int:audio_id>/",extract_pitch_view,name='extract_pitch'),
+    path('analyze_text/', analyze_text, name='analyze_text'),  # ✅ Add new endpoint
 
 
 ]
