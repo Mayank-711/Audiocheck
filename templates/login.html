@@ -1,68 +1,4 @@
-{% comment %} {% extends "authapp/base.html" %} {% block title %}Login{%
-endblock %} {% block content %}
-<h1>Welcome</h1>
-<p>Login to your account to continue</p>
-<form method="post">
-  {% csrf_token %} {% if messages %}
-  <div
-    id="message-container"
-    class="alert alert-warning"
-    role="alert"
-    style="color: crimson"
-  >
-    {% for message in messages %} {{ message }} {% endfor %}
-  </div>
-  {% endif %}
-  <input
-    type="text"
-    placeholder="Username"
-    id="username"
-    name="username"
-    required
-  />
-  <input
-    type="password"
-    id="password"
-    name="password"
-    placeholder="Password"
-    required
-  />
-  <div class="links">
-    <label> <input type="checkbox" id="show-password" /> Show Password </label>
-  </div>
-  <button type="submit">LOG IN</button>
-</form>
-
-{% endblock %} {% block bottom %}
-<p>Don't have an account? <a href="{% url 'signup' %}">Sign Up</a></p>
-<p>Click here to go <a href="{% url 'landingpage' %}">Home</a></p>
-{% endblock %} {% block scripts %}
-<script>
-  document
-    .getElementById("show-password")
-    .addEventListener("change", function () {
-      const passwordField = document.getElementById("password");
-      if (this.checked) {
-        passwordField.type = "text";
-      } else {
-        passwordField.type = "password";
-      }
-    });
-
-  // Function to hide messages after a delay
-  function hideMessages() {
-    const messageContainer = document.getElementById("message-container");
-    if (messageContainer) {
-      setTimeout(() => {
-        messageContainer.style.display = "none";
-      }, 3000);
-    }
-  }
-
-  // Call the hideMessages function when the document is loaded
-  document.addEventListener("DOMContentLoaded", hideMessages);
-</script>
-{% endblock %} {% endcomment %} {% load static %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -79,81 +15,48 @@ endblock %} {% block content %}
     <div class="container">
       <div class="forms-container">
         <div class="signin-signup">
-          
           <!-- Login Form -->
           <form method="post" class="sign-in-form" action="{% url 'login' %}">
-            <h1>
-              <a
-                href="{% url 'landingpage' %}"
-                style="color: inherit; text-decoration: none;margin-bottom: 50px"
-                >CarbonIQ</a
-              >
-            </h1>
             {% csrf_token %}
+            <input type="hidden" name="form_type" value="login" />
+            <h1>
+              <a href="{% url 'home' %}" style="color: inherit; text-decoration: none; margin-bottom: 50px">
+                CarbonIQ
+              </a>
+            </h1>
             <h2 class="title">LOGIN</h2>
             {% if messages %}
-            <div
-              id="message-container"
-              class="alert alert-warning"
-              role="alert"
-              style="color: crimson"
-            >
+            <div id="message-container" class="alert alert-warning" role="alert" style="color: crimson">
               {% for message in messages %} {{ message }} {% endfor %}
             </div>
             {% endif %}
             <div class="input-field">
               <i class="fas fa-user"></i>
-              <input
-                type="text"
-                name="username"
-                placeholder="Username"
-                required
-              />
+              <input type="text" name="username" placeholder="Username" required />
             </div>
             <div class="input-field">
               <i class="fas fa-lock"></i>
-              <input
-                type="password"
-                name="password"
-                placeholder="Password"
-                required
-              />
+              <input type="password" name="password" placeholder="Password" required />
             </div>
             <button type="submit" class="btn">LOGIN</button>
-            <a
-              href="{% url 'landingpage' %}"
-              style="color: inherit; text-decoration: none"
-              >Back to <span style="color:green;font-size:20px">Home</span></a
-            >
-            <a
-              href="{% url 'adminlogin' %}"
-              style="color: inherit; text-decoration: none"
-              >Are You Admin? <span style="color:green;font-size:20px">Admin Login</span></a
-            >
+            <a href="{% url 'home' %}" style="color: inherit; text-decoration: none">
+              Back to <span style="color: green; font-size: 20px">Home</span>
+            </a>
           </form>
 
           <!-- Sign Up Form -->
           <form method="post" class="sign-up-form" action="{% url 'signup' %}">
             {% csrf_token %}
+            <input type="hidden" name="form_type" value="signup" />
             <h2 class="title">SIGN UP</h2>
             {% if messages %}
-            <div
-              id="message-container"
-              class="alert alert-warning"
-              role="alert"
-              style="color: crimson"
-            >
+            <div id="message-container" class="alert alert-warning" role="alert" style="color: crimson">
               {% for message in messages %} {{ message }} {% endfor %}
             </div>
             {% endif %}
             <div class="input-field">
               <i class="fas fa-user"></i>
-              <input
-                type="text"
-                name="username"
-                placeholder="Username"
-                required
-              />
+              <input type="text" name="username" placeholder="Username" required />
             </div>
             <div class="input-field">
               <i class="fas fa-envelope"></i>
@@ -161,19 +64,12 @@ endblock %} {% block content %}
             </div>
             <div class="input-field">
               <i class="fas fa-lock"></i>
-              <input
-                type="password"
-                name="password"
-                placeholder="Password"
-                required
-              />
+              <input type="password" name="password" placeholder="Password" required />
             </div>
             <button type="submit" class="btn">SIGN UP</button>
-            <a
-              href="{% url 'landingpage' %}"
-              style="color: inherit; text-decoration: none"
-              >Back to <span style="color:green;font-size:20px">Home</span></a
-            >
+            <a href="{% url 'home' %}" style="color: inherit; text-decoration: none">
+              Back to <span style="color: green; font-size: 20px">Home</span>
+            </a>
           </form>
         </div>
       </div>
@@ -186,45 +82,37 @@ endblock %} {% block content %}
             <p>Join us and start your journey today.</p>
             <button class="btn transparent" id="sign-up-btn">SIGN UP</button>
           </div>
-          <img
-            src="{% static 'images/coin.png' %}"
-            class="image"
-            alt="Sign Up"
-          />
+          <img src="{% static 'images/coin.png' %}" class="image" alt="Sign Up" />
         </div>
         <div class="panel right-panel">
           <div class="content">
             <h1>
-              <a
-                href="{% url 'landingpage' %}"
-                style="color: inherit; text-decoration: none"
-                >CarbonIQ</a
-              >
+              <a href="{% url 'home' %}" style="color: inherit; text-decoration: none">
+                CarbonIQ
+              </a>
             </h1>
             <p>Sign in and continue where you left off.</p>
             <button class="btn transparent" id="sign-in-btn">LOGIN</button>
           </div>
-          <img
-            src="{% static 'images/leaf.png' %}"
-            class="image"
-            alt="Sign In"
-          />
+          <img src="{% static 'images/leaf.png' %}" class="image" alt="Sign In" />
         </div>
       </div>
     </div>
 
     <!-- JavaScript for Animation -->
     <script>
-      const signUpBtn = document.getElementById("sign-up-btn");
-      const signInBtn = document.getElementById("sign-in-btn");
-      const container = document.querySelector(".container");
+      document.addEventListener("DOMContentLoaded", function () {
+        const signUpBtn = document.getElementById("sign-up-btn");
+        const signInBtn = document.getElementById("sign-in-btn");
+        const container = document.querySelector(".container");
 
-      signUpBtn.addEventListener("click", () => {
-        container.classList.add("sign-up-mode");
-      });
+        signUpBtn.addEventListener("click", () => {
+          container.classList.add("sign-up-mode");
+        });
 
-      signInBtn.addEventListener("click", () => {
-        container.classList.remove("sign-up-mode");
+        signInBtn.addEventListener("click", () => {
+          container.classList.remove("sign-up-mode");
+        });
       });
     </script>
   </body>

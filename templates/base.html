@@ -1,4 +1,4 @@
-{%load static%}
+{% load static %}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -7,16 +7,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Call Center Bot</title>
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
-    <script src="script.js" defer></script>
 </head>
 <body>
     <nav class="navbar">
         <div class="logo">AI Bot</div>
         <div class="hamburger" onclick="toggleMenu()">☰</div>
         <ul class="nav-links">
-            <li><a href="{% url 'home.html' %}">Home</a></li>
-            <li><a href="#">Calls</a></li>
-            <li><a href="{% url 'login.html' %}">Login</a></li>
+            <li><a href="{% url 'home' %}">Home</a></li>
+            <li><a href="{% url 'call' %}">Calls</a></li>
+            <li><a href="{% url 'login' %}">Login</a></li>
         </ul>
     </nav>
     
