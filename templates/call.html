@@ -113,8 +113,8 @@
                         <div class="analysis-item">
                             <i class="fas fa-key"></i>
                             <div class="analysis-content">
-                                <h4>Keywords</h4>
-                                <p id="keywords-{{ audio.id }}"></p>
+                                <h4>Sentiment</h4>
+                                <p id="sentiment-{{ audio.id }}"></p>
                             </div>
                         </div>
                         <div class="analysis-item">
@@ -128,11 +128,7 @@
                             <i class="fas fa-music"></i>
                             <div class="analysis-content">
                                 <h4>Pitch</h4>
-                                <p id="pitch-{{ audio.id }}">Loading...</p>
                             </div>
-                        </div>
-                        <div class="pitch-plot-container">
-                            <img id="pitch-plot-{{ audio.id }}" class="pitch-plot" alt="Pitch analysis graph" />
                         </div>
                     </div>
                 </div>
@@ -156,7 +152,7 @@
             const queryInterval = 3; // Fetch new data every 3 seconds
             let transcriptHistory = []; // Store past transcriptions
             let emotionHistory = []; // Store past emotions
-
+            let sentimentHistory = [];
             audioElement.addEventListener("timeupdate", function () {
                 const currentTime = Math.floor(audioElement.currentTime);
 
@@ -184,9 +180,11 @@
                             document.getElementById(`emotion-${audioId}`).innerHTML = emotionHistory.join(", ");
 
                             // ✅ Update keywords if available
-                            if (data.keywords) {
-                                document.getElementById(`keywords-${audioId}`).innerHTML = data.keywords.join(", ");
-                            }
+                            let newSentiment = data.sentiment || "Neutral";
+                            sentimentHistory.push(`<span class="highlight-new">${newSentiment}</span>`);
+                            document.getElementById(`sentiment-${audioId}`).innerHTML = sentimentHistory.join(", ");
+
+                            
 
                             // ✅ Remove highlighting after 3 seconds
                             setTimeout(() => {
@@ -214,10 +212,6 @@
                                 `${data.min_pitch}Hz - ${data.max_pitch}Hz (avg: ${data.avg_pitch}Hz)`;
                             
                             // Update pitch plot if available
-                            if (data.plot_url) {
-                                document.getElementById(`pitch-plot-${audioId}`).src = data.plot_url;
-                                document.getElementById(`pitch-plot-${audioId}`).style.display = "block";
-                            }
                         })
                         .catch(error => console.error("❌ Fetch error:", error));
                 }
