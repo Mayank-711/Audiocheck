@@ -69,33 +69,44 @@
         {% endif %}
     </div>
 </div>
-
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         document.querySelectorAll("audio").forEach(audioElement => {
             const audioId = audioElement.getAttribute("id").split("-")[1];
+            let lastQueriedTime = -1; // Track last requested time to avoid redundant calls
+            const queryInterval = 5; // Set interval to 5 seconds (adjust if needed)
 
             audioElement.addEventListener("timeupdate", function () {
-                const currentTime = Math.floor(audioElement.currentTime); // Get current playback time (in seconds)
+                const currentTime = Math.floor(audioElement.currentTime);
 
-                fetch(`/analyze_audio/${audioId}/?time=${currentTime}`, { method: "GET" })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        console.error("Error:", data.error);
-                        return;
-                    }
-                    document.getElementById("transcription-" + audioId).innerText = data.transcript.map(t => t.text).join(" ");
-                    document.getElementById("keywords-" + audioId).innerText = data.keywords.join(", ");
-                    document.getElementById("emotion-" + audioId).innerText = data.transcript.length > 0 ? data.transcript[0].emotion : "N/A";
-                    document.getElementById("pitch-" + audioId).innerText = data.pitch_values.slice(0, 5).join(", ") + "...";
+                // Avoid frequent API calls (only call when new interval is reached)
+                if (currentTime % queryInterval === 0 && currentTime !== lastQueriedTime) {
+                    lastQueriedTime = currentTime; // Update last queried time
 
-                    if (data.pitch_plot) {
-                        document.getElementById("pitch-plot-" + audioId).src = "/" + data.pitch_plot;
-                        document.getElementById("pitch-plot-" + audioId).style.display = "block";
-                    }
-                })
-                .catch(error => console.error("Error:", error));
+                    fetch(`/analyze_audio/${audioId}/?time=${currentTime}`, { method: "GET" })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.error) {
+                                console.error("Error:", data.error);
+                                return;
+                            }
+                            document.getElementById(`transcription-${audioId}`).innerText = 
+                                data.transcript.map(t => t.text).join(" ") || "N/A";
+                            document.getElementById(`keywords-${audioId}`).innerText = 
+                                data.keywords?.join(", ") || "N/A";
+                            document.getElementById(`emotion-${audioId}`).innerText = 
+                                data.transcript.length > 0 ? data.transcript[0].emotion : "N/A";
+                            document.getElementById(`pitch-${audioId}`).innerText = 
+                                data.pitch_values.slice(0, 5).join(", ") + "...";
+
+                            if (data.pitch_plot) {
+                                const pitchPlotElement = document.getElementById(`pitch-plot-${audioId}`);
+                                pitchPlotElement.src = `/${data.pitch_plot}`;
+                                pitchPlotElement.style.display = "block";
+                            }
+                        })
+                        .catch(error => console.error("Error:", error));
+                }
             });
         });
     });

@@ -1,3 +1,4 @@
+import tempfile
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
@@ -156,6 +157,29 @@ classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnl
 emotion_labels = ["happy", "sad", "angry", "fearful", "surprised", "disgusted", "neutral", "calm"]
 print("✅ NLP models loaded!")
 
+# Load ML models once
+nlp = spacy.load("en_core_web_sm")
+classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+emotion_labels = ["happy", "sad", "angry", "neutral"]
+whisper_model = whisper.load_model("base")
+
+import warnings
+
+warnings.filterwarnings("ignore", category=UserWarning, module="whisper")  # Suppress FP16 warning
+
+import soundfile as sf
+import numpy as np
+import librosa
+import soundfile as sf
+import os
+import tempfile
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import AudioFile
+import warnings
+
+warnings.filterwarnings("ignore", category=UserWarning, module="whisper")  # Suppress FP16 warning
+
 @csrf_exempt
 def analyze_audio(request, audio_id):
     try:
@@ -172,47 +196,38 @@ def analyze_audio(request, audio_id):
 
         # ✅ Get current time from request
         current_time = int(request.GET.get("time", 0))  # Default to 0 if not provided
-        chunk_duration = 3  # Process 3-second chunks
+        chunk_duration = 5  # Process 5-second chunks
         print(f"🔹 Processing chunk from {current_time}s to {current_time + chunk_duration}s")
 
-        # ✅ Load only the required chunk of audio (Since file is already .wav)
+        # ✅ Load only the required chunk of audio
         y, sr = librosa.load(audio_path, sr=None, offset=current_time, duration=chunk_duration)
-        print(f"✅ Audio chunk loaded: {len(y)} samples at {sr} Hz")
 
-        if len(y) == 0:
+        if y is None or len(y) == 0:  # 🚀 Fix: Check for empty audio chunk
             print(f"⚠️ Empty audio chunk at {current_time}s")
             return JsonResponse({"error": "Empty audio chunk"}, status=400)
 
-        # ✅ Whisper transcription for this chunk
-        print("🔹 Running Whisper transcription...")
-        result = whisper_model.transcribe(audio_path, initial_prompt="", language="en")
-        transcript_text = result["text"].strip()
+        print(f"✅ Audio chunk loaded: {len(y)} samples at {sr} Hz")
+
+        # ✅ Save chunk as temporary .wav file
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_audio_file:
+            tmp_audio_path = tmp_audio_file.name
+            sf.write(tmp_audio_path, y, sr)
+
+        print("🔹 Running Whisper transcription on extracted chunk...")
+        result = whisper_model.transcribe(tmp_audio_path, language="en")
+        os.remove(tmp_audio_path)  # Cleanup temporary file
+
+        transcript_text = result.get("text", "").strip()
+        if not transcript_text:
+            print("⚠️ No transcribed text detected.")
+            return JsonResponse({"error": "No transcribed text detected"}, status=400)
+
         print(f"✅ Transcription: {transcript_text}")
-
-        # ✅ Sentence Segmentation and Emotion Detection
-        print("🔹 Running emotion detection...")
-        sentences = [sent.text for sent in nlp(transcript_text).sents]
-        structured_transcript = []
-        for sentence in sentences:
-            emotion_result = classifier(sentence, candidate_labels=emotion_labels)
-            detected_emotion = emotion_result["labels"][0]
-            structured_transcript.append({
-                "text": sentence,
-                "emotion": detected_emotion
-            })
-            print(f"📝 '{sentence}' → {detected_emotion}")
-
-        # ✅ Pitch Analysis for the chunk
-        print("🔹 Running pitch analysis...")
-        f0, _, _ = librosa.pyin(y, fmin=50, fmax=500)
-        f0 = np.nan_to_num(f0)  # Replace NaN values with 0
-        print(f"✅ Pitch values (first 5): {f0[:5]}")
 
         # ✅ Return JSON Response
         print("✅ Sending response...")
         return JsonResponse({
-            "transcript": structured_transcript,
-            "pitch_values": f0.tolist()
+            "transcript": transcript_text
         })
 
     except AudioFile.DoesNotExist:
