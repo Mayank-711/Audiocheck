@@ -16,6 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 from mainapp.views import *
 
 urlpatterns = [
@@ -24,4 +26,10 @@ urlpatterns = [
     path('login/',loginpage,name='login'),
     path('signup/',loginpage,name='signup'),
     path('call/',call,name='call'),
+    path('logout/',user_logout,name='logout'),
+    path("delete_audio/<int:audio_id>/", delete_audio, name="delete_audio"),
+
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

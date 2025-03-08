@@ -1,9 +1,13 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.models import User
 import re
 from django.contrib.auth.decorators import login_required
+from .models import AudioFile
+from .forms import AudioUploadForm
+import os
+from django.conf import settings
 
 def home(request):
     return render(request, "home.html")
@@ -70,6 +74,35 @@ def user_logout(request):
 
 @login_required(login_url='login')
 def call(request):
-    print("User:", request.user)  # Debugging
-    return render(request, 'call.html')
+    if request.method == "POST":
+        form = AudioUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            uploaded_file = request.FILES["audio"]
+            if not AudioFile.objects.filter(audio="uploads/audio/" + uploaded_file.name).exists():
+                form.save()
+
+        return redirect("call")
+
+    else:
+        form = AudioUploadForm()
+
+    audio_files = AudioFile.objects.all()
+    return render(request, "call.html", {"form": form, "audio_files": audio_files})
+
+
+@login_required(login_url='login')
+def delete_audio(request, audio_id):
+    audio = get_object_or_404(AudioFile, id=audio_id)
+    
+    # Get the full path of the file
+    file_path = os.path.join(settings.MEDIA_ROOT, str(audio.audio))
+
+    # Delete the file from storage
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    # Delete the database entry
+    audio.delete()
+
+    return redirect("call")
 
