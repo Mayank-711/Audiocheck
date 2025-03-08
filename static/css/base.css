@@ -12,9 +12,9 @@ body {
     justify-content: space-between;
     align-items: center;
     background: #111;
-    padding: 15px 20px;
+    padding: 15px 10px;
     position: fixed;
-    width: 100%;
+    width: 97%;
     top: 0;
     z-index: 1000;
 }
@@ -38,7 +38,7 @@ body {
 }
 
 .nav-links a:hover {
-    color: #1de9b6;
+    color: #00bcd4;
 }
 
 /* Hamburger Menu */

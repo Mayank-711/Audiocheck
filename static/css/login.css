@@ -13,7 +13,7 @@
     position: relative;
     width: 100%;
     min-height: 100vh;
-    background-color: #fff;
+    background-color: #040404;
     overflow: hidden;
   }
   
@@ -22,7 +22,7 @@
     position: absolute;
     width: 2000px;
     height: 3000px;
-    background: linear-gradient(-45deg, #66d18e, #80eba7);
+    background: linear-gradient(-45deg, #00bcd4, #00bcd4);
     border-radius: 50%;
     top: -10%;
     right: 48%;
@@ -123,7 +123,7 @@
   .btn {
     height: 49px;
     width: 150px;
-    background-color: #6eeaac;
+    background-color: #00bcd4;
     border: none;
     outline: none;
     border-radius: 49px;
