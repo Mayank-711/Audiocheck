@@ -14,10 +14,9 @@
         <div class="logo">AI Bot</div>
         <div class="hamburger" onclick="toggleMenu()">☰</div>
         <ul class="nav-links">
-            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="{% url 'home.html' %}">Home</a></li>
             <li><a href="#">Calls</a></li>
-            <li><a href="#">Analytics</a></li>
-            <li><a href="#">Settings</a></li>
+            <li><a href="{% url 'login.html' %}">Login</a></li>
         </ul>
     </nav>
     
