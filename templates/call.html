@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="dashboard">
+    <h1>Dashboard</h1>
+    
+    <li><a href="{% url 'logout' %}">Logout</a></li>
+
+    <div class="upload-section">
+        <h2>Upload Audio File</h2>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Upload</button>
+        </form>
+    </div>
+
+    <div class="audio-list">
+        <h2>Uploaded Audio Files</h2>
+
+        {% if audio_files %}
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>File Name</th>
+                    <th>Play</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for audio in audio_files %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ audio.audio.name }}</td>
+                    <td>
+                        <audio controls>
+                            <source src="{{ audio.audio.url }}" type="audio/mpeg">
+                            Your browser does not support the audio element.
+                        </audio>
+                    </td>
+                    <td>
+                        <button class="details-btn" data-audio-id="{{ audio.id }}">View Details</button>
+                        <form method="post" action="{% url 'delete_audio' audio.id %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="delete-btn" onclick="return confirm('Are you sure you want to delete this file?');">
+                                Delete
+                            </button>
+                        </form>
+                        <div class="details" id="details-{{ audio.id }}" style="display: none;">
+                            <p><strong>Uploaded At:</strong> {{ audio.uploaded_at }}</p>
+                            <p><strong>File Path:</strong> {{ audio.audio.url }}</p>
+                        </div>
+                    </td>
+                    
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color: red; text-align: center;">No audio file uploaded yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".details-btn").forEach(button => {
+            button.addEventListener("click", function () {
+                const audioId = this.getAttribute("data-audio-id");
+                const detailsDiv = document.getElementById("details-" + audioId);
+                if (detailsDiv.style.display === "none") {
+                    detailsDiv.style.display = "block";
+                } else {
+                    detailsDiv.style.display = "none";
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
