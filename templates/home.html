@@ -1,8 +1,14 @@
-<!DOCTYPE html>
-<html>
-<body>
+{% extends "base.html" %}
 
-<h1>Home page</h1>
+{%load static%}
 
-</body>
-</html>
+{% block content %}
+<div class="dashboard">
+    <h1>Dashboard</h1>
+    <div class="cards">
+        <div class="card">Total Calls: 150</div>
+        <div class="card">Successful Resolutions: 90</div>
+        <div class="card">Pending Calls: 30</div>
+    </div>
+</div>
+{% endblock %}
