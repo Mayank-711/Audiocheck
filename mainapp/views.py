@@ -169,6 +169,7 @@ sentiment_labels = ["positive", "neutral", "negative"]
 
 print("✅ NLP models loaded!")
 
+
 @csrf_exempt
 def analyze_audio(request, audio_id):
     try:
@@ -230,6 +231,99 @@ def analyze_audio(request, audio_id):
             "transcript": transcript_text,
             "emotion": detected_emotion,
             "sentiment": detected_sentiment,
+        })
+
+    except AudioFile.DoesNotExist:
+        print(f"❌ Error: Audio file ID {audio_id} not found in database")
+        return JsonResponse({"error": "Audio file not found in database"}, status=404)
+    
+    except Exception as e:
+        print(f"❌ Unexpected Error: {str(e)}")  # Print full error in console
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+def extract_pitch(y, sr):
+    """
+    Extracts pitch (F0) values from an audio signal.
+    
+    :param y: Audio signal (numpy array)
+    :param sr: Sample rate of the audio
+    :return: A dictionary containing min, max, and average pitch or an error message
+    """
+    try:
+        print("🔹 Extracting pitch (F0) values...")
+        f0, voiced_flag, voiced_probs = librosa.pyin(y, fmin=librosa.note_to_hz('C2'), fmax=librosa.note_to_hz('C7'))
+        f0_values = f0[~np.isnan(f0)].tolist()  # Remove NaN values
+
+        if not f0_values:
+            print("⚠️ No pitch detected.")
+            return {"error": "No pitch detected"}
+
+        pitch_data = {
+            "min_pitch": round(min(f0_values), 2),
+            "max_pitch": round(max(f0_values), 2),
+            "avg_pitch": round(np.mean(f0_values), 2),
+        }
+        print(f"✅ Pitch range detected: {pitch_data}")
+        return pitch_data
+
+    except Exception as e:
+        print(f"❌ Pitch extraction error: {str(e)}")
+        return {"error": "Pitch extraction error"}
+
+@csrf_exempt
+def extract_pitch_view(request, audio_id):
+    """
+    Django view to extract pitch (F0) from a 5-second chunk of audio.
+    """
+    try:
+        print(f"🔹 Received request for pitch extraction - Audio ID: {audio_id}")
+
+        # ✅ Get the audio file from the database
+        audio_instance = AudioFile.objects.get(id=audio_id)
+        audio_path = audio_instance.audio.path  # Full path to the .wav file
+        print(f"📂 Found audio file: {audio_path}")
+
+        if not os.path.exists(audio_path):
+            print("❌ Error: Audio file not found on the server.")
+            return JsonResponse({"error": "Audio file not found on the server"}, status=404)
+
+        # ✅ Get current time from request
+        current_time = int(request.GET.get("time", 0))  # Default to 0 if not provided
+        chunk_duration = 5  # Process 5-second chunks
+        print(f"🔹 Processing chunk from {current_time}s to {current_time + chunk_duration}s")
+
+        # ✅ Load only the required chunk of audio
+        y, sr = librosa.load(audio_path, sr=None, offset=current_time, duration=chunk_duration)
+
+        if y is None or len(y) == 0:  # 🚀 Fix: Check for empty audio chunk
+            print(f"⚠️ Empty audio chunk at {current_time}s")
+            return JsonResponse({"error": "Empty audio chunk"}, status=400)
+
+        print(f"✅ Audio chunk loaded: {len(y)} samples at {sr} Hz")
+
+        # ✅ Extract pitch (F0) values
+        print("🔹 Extracting pitch (F0) values...")
+        f0, voiced_flag, voiced_probs = librosa.pyin(y, fmin=librosa.note_to_hz('C2'), fmax=librosa.note_to_hz('C7'))
+        f0_values = f0[~np.isnan(f0)].tolist()  # Remove NaN values
+
+        if not f0_values:
+            print("⚠️ No pitch detected.")
+            return JsonResponse({"error": "No pitch detected"}, status=400)
+
+        # ✅ Calculate pitch statistics
+        min_pitch = round(min(f0_values), 2)
+        max_pitch = round(max(f0_values), 2)
+        avg_pitch = round(np.mean(f0_values), 2)
+        pitch_summary = f"{min_pitch}Hz - {max_pitch}Hz (avg: {avg_pitch}Hz)"
+
+        print(f"✅ Pitch range detected: {pitch_summary}")
+
+        # ✅ Return JSON response
+        return JsonResponse({
+            "min_pitch": min_pitch,
+            "max_pitch": max_pitch,
+            "avg_pitch": avg_pitch
         })
 
     except AudioFile.DoesNotExist:
