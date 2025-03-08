@@ -135,79 +135,81 @@ def delete_audio(request, audio_id):
 
     return redirect("call")
 
-
 import os
 import whisper
 import librosa
 import numpy as np
 import spacy
-import matplotlib.pyplot as plt
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from transformers import pipeline
 from .models import AudioFile  # Your AudioFile model
 
-# Load models
+# Load models once for better performance
+print("🔹 Loading Whisper model...")
 whisper_model = whisper.load_model("base")
+print("✅ Whisper model loaded!")
+
+print("🔹 Loading NLP and classification models...")
 nlp = spacy.load("en_core_web_sm")
 classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
 emotion_labels = ["happy", "sad", "angry", "fearful", "surprised", "disgusted", "neutral", "calm"]
+print("✅ NLP models loaded!")
 
 @csrf_exempt
 def analyze_audio(request, audio_id):
     try:
+        print(f"🔹 Received request for audio ID: {audio_id}")
+
+        # ✅ Get the audio file from the database
         audio_instance = AudioFile.objects.get(id=audio_id)
-        audio_path = audio_instance.audio.path
+        audio_path = audio_instance.audio.path  # Full path to the .wav file
+        print(f"📂 Found audio file: {audio_path}")
 
         if not os.path.exists(audio_path):
+            print("❌ Error: Audio file not found on the server.")
             return JsonResponse({"error": "Audio file not found on the server"}, status=404)
 
         # ✅ Get current time from request
-        current_time = int(request.GET.get("time", 0))  # Default 0 if no time provided
-        chunk_duration = 3  # Process 3 seconds of audio at a time
+        current_time = int(request.GET.get("time", 0))  # Default to 0 if not provided
+        chunk_duration = 3  # Process 3-second chunks
+        print(f"🔹 Processing chunk from {current_time}s to {current_time + chunk_duration}s")
 
-        print(f"🔹 Processing audio ID {audio_id}, time: {current_time}-{current_time+chunk_duration}")
-
-        # ✅ Load only the required chunk of audio
+        # ✅ Load only the required chunk of audio (Since file is already .wav)
         y, sr = librosa.load(audio_path, sr=None, offset=current_time, duration=chunk_duration)
+        print(f"✅ Audio chunk loaded: {len(y)} samples at {sr} Hz")
 
         if len(y) == 0:
             print(f"⚠️ Empty audio chunk at {current_time}s")
             return JsonResponse({"error": "Empty audio chunk"}, status=400)
 
         # ✅ Whisper transcription for this chunk
-        temp_filename = f"temp_chunk_{audio_id}.wav"
-        temp_path = os.path.join("media", temp_filename)
-        
-        # 🔹 Save chunk as WAV file
-        try:
-            librosa.output.write_wav(temp_path, y, sr)
-        except Exception as e:
-            print(f"❌ Error saving chunk: {str(e)}")
-            return JsonResponse({"error": "Failed to save chunk"}, status=500)
-
-        result = whisper_model.transcribe(temp_path)
+        print("🔹 Running Whisper transcription...")
+        result = whisper_model.transcribe(audio_path, initial_prompt="", language="en")
         transcript_text = result["text"].strip()
-        os.remove(temp_path)  # Delete temp file after processing
+        print(f"✅ Transcription: {transcript_text}")
 
         # ✅ Sentence Segmentation and Emotion Detection
+        print("🔹 Running emotion detection...")
         sentences = [sent.text for sent in nlp(transcript_text).sents]
         structured_transcript = []
         for sentence in sentences:
             emotion_result = classifier(sentence, candidate_labels=emotion_labels)
+            detected_emotion = emotion_result["labels"][0]
             structured_transcript.append({
                 "text": sentence,
-                "emotion": emotion_result["labels"][0]  # Top emotion
+                "emotion": detected_emotion
             })
+            print(f"📝 '{sentence}' → {detected_emotion}")
 
         # ✅ Pitch Analysis for the chunk
+        print("🔹 Running pitch analysis...")
         f0, _, _ = librosa.pyin(y, fmin=50, fmax=500)
-        f0 = np.nan_to_num(f0)
-
-        print(f"✅ Transcription: {transcript_text}")
-        print(f"✅ Pitch values: {f0[:5]}")  # Print first 5 pitch values
+        f0 = np.nan_to_num(f0)  # Replace NaN values with 0
+        print(f"✅ Pitch values (first 5): {f0[:5]}")
 
         # ✅ Return JSON Response
+        print("✅ Sending response...")
         return JsonResponse({
             "transcript": structured_transcript,
             "pitch_values": f0.tolist()
