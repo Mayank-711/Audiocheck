@@ -70,59 +70,59 @@
     </div>
 </div>
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        document.querySelectorAll("audio").forEach(audioElement => {
-            const audioId = audioElement.getAttribute("id").split("-")[1];
-            let lastQueriedTime = -1; // Prevent duplicate API calls
-            const queryInterval = 5; // Fetch new transcription every 5 seconds
-            let transcriptHistory = []; // Store past transcriptions
-    
-            audioElement.addEventListener("timeupdate", function () {
-                const currentTime = Math.floor(audioElement.currentTime);
-    
-                // ✅ Fetch new transcript every 5 seconds
-                if (currentTime % queryInterval === 0 && currentTime !== lastQueriedTime) {
-                    lastQueriedTime = currentTime;
-    
-                    fetch(`/analyze_audio/${audioId}/?time=${currentTime}`, { method: "GET" })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.error) {
-                                console.error("❌ Error:", data.error);
-                                return;
-                            }
-    
-                            // ✅ Store transcript and highlight the latest chunk
-                            let newText = data.transcript || "No speech detected";
-                            transcriptHistory.push(`<span style="background-color: yellow;">${newText}</span>`);
-    
-                            // ✅ Display the entire transcript history
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("audio").forEach(audioElement => {
+        const audioId = audioElement.getAttribute("id").split("-")[1];
+        let lastQueriedTime = -1; // Prevent duplicate API calls
+        const queryInterval = 5; // Fetch new transcription every 5 seconds
+        let transcriptHistory = []; // Store past transcriptions
+
+        audioElement.addEventListener("timeupdate", function () {
+            const currentTime = Math.floor(audioElement.currentTime);
+
+            // ✅ Fetch new transcript every 5 seconds
+            if (currentTime % queryInterval === 0 && currentTime !== lastQueriedTime) {
+                lastQueriedTime = currentTime;
+
+                fetch(`/analyze_audio/${audioId}/?time=${currentTime}`, { method: "GET" })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            console.error("❌ Error:", data.error);
+                            return;
+                        }
+
+                        // ✅ Store transcript and highlight the latest chunk
+                        let newText = data.transcript || "No speech detected";
+                        transcriptHistory.push(`<span style="background-color: yellow;">${newText}</span>`);
+
+                        // ✅ Display the entire transcript history
+                        document.getElementById(`transcription-${audioId}`).innerHTML = transcriptHistory.join(" ");
+
+                        // ✅ Update other elements safely
+                        document.getElementById(`keywords-${audioId}`).innerText = data.keywords ? data.keywords.join(", ") : "N/A";
+                        document.getElementById(`emotion-${audioId}`).innerText = data.emotion || "N/A";
+                        document.getElementById(`pitch-${audioId}`).innerText = data.pitch_values ? data.pitch_values.slice(0, 5).join(", ") + "..." : "N/A";
+
+                        // ✅ Show pitch plot if available
+                        if (data.pitch_plot) {
+                            const pitchPlotElement = document.getElementById(`pitch-plot-${audioId}`);
+                            pitchPlotElement.src = `/${data.pitch_plot}`;
+                            pitchPlotElement.style.display = "block";
+                        }
+
+                        // ✅ Remove highlighting after 3 seconds
+                        setTimeout(() => {
+                            transcriptHistory[transcriptHistory.length - 1] = newText;
                             document.getElementById(`transcription-${audioId}`).innerHTML = transcriptHistory.join(" ");
-    
-                            // ✅ Update other elements safely
-                            document.getElementById(`keywords-${audioId}`).innerText = data.keywords ? data.keywords.join(", ") : "N/A";
-                            document.getElementById(`emotion-${audioId}`).innerText = data.emotion || "N/A";
-                            document.getElementById(`pitch-${audioId}`).innerText = data.pitch_values ? data.pitch_values.slice(0, 5).join(", ") + "..." : "N/A";
-    
-                            // ✅ Show pitch plot if available
-                            if (data.pitch_plot) {
-                                const pitchPlotElement = document.getElementById(`pitch-plot-${audioId}`);
-                                pitchPlotElement.src = `/${data.pitch_plot}`;
-                                pitchPlotElement.style.display = "block";
-                            }
-    
-                            // ✅ Remove highlighting after 3 seconds
-                            setTimeout(() => {
-                                transcriptHistory[transcriptHistory.length - 1] = newText;
-                                document.getElementById(`transcription-${audioId}`).innerHTML = transcriptHistory.join(" ");
-                            }, 3000);
-                        })
-                        .catch(error => console.error("❌ Fetch error:", error));
-                }
-            });
+                        }, 3000);
+                    })
+                    .catch(error => console.error("❌ Fetch error:", error));
+            }
         });
     });
-    
+});
+
 </script>
 
 

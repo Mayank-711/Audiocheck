@@ -136,6 +136,8 @@ def delete_audio(request, audio_id):
 
     return redirect("call")
 
+
+
 import os
 import whisper
 import librosa
@@ -145,6 +147,11 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from transformers import pipeline
 from .models import AudioFile  # Your AudioFile model
+import soundfile as sf
+import tempfile
+import warnings
+
+warnings.filterwarnings("ignore", category=UserWarning, module="whisper")  # Suppress FP16 warning
 
 # Load models once for better performance
 print("🔹 Loading Whisper model...")
@@ -154,31 +161,13 @@ print("✅ Whisper model loaded!")
 print("🔹 Loading NLP and classification models...")
 nlp = spacy.load("en_core_web_sm")
 classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+sentiment_classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+
+# Define emotion and sentiment labels
 emotion_labels = ["happy", "sad", "angry", "fearful", "surprised", "disgusted", "neutral", "calm"]
+sentiment_labels = ["positive", "neutral", "negative"]
+
 print("✅ NLP models loaded!")
-
-# Load ML models once
-nlp = spacy.load("en_core_web_sm")
-classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
-emotion_labels = ["happy", "sad", "angry", "neutral"]
-whisper_model = whisper.load_model("base")
-
-import warnings
-
-warnings.filterwarnings("ignore", category=UserWarning, module="whisper")  # Suppress FP16 warning
-
-import soundfile as sf
-import numpy as np
-import librosa
-import soundfile as sf
-import os
-import tempfile
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from .models import AudioFile
-import warnings
-
-warnings.filterwarnings("ignore", category=UserWarning, module="whisper")  # Suppress FP16 warning
 
 @csrf_exempt
 def analyze_audio(request, audio_id):
@@ -224,10 +213,23 @@ def analyze_audio(request, audio_id):
 
         print(f"✅ Transcription: {transcript_text}")
 
+        # ✅ Run emotion and sentiment analysis
+        print("🔹 Running emotion and sentiment analysis...")
+        emotion_result = classifier(transcript_text, candidate_labels=emotion_labels)
+        detected_emotion = emotion_result["labels"][0]  # Top-ranked emotion
+
+        sentiment_result = sentiment_classifier(transcript_text, candidate_labels=sentiment_labels)
+        detected_sentiment = sentiment_result["labels"][0]  # Top-ranked sentiment
+
+        print(f"✅ Emotion Detected: {detected_emotion}")
+        print(f"✅ Sentiment Detected: {detected_sentiment}")
+
         # ✅ Return JSON Response
         print("✅ Sending response...")
         return JsonResponse({
-            "transcript": transcript_text
+            "transcript": transcript_text,
+            "emotion": detected_emotion,
+            "sentiment": detected_sentiment,
         })
 
     except AudioFile.DoesNotExist:
