@@ -7,6 +7,63 @@
 <head>
     <link rel="stylesheet" type="text/css" href="{% static 'css/call.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Additional styles for the analysis table */
+        .analysis-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        .analysis-table th {
+            background-color:rgb(79, 70, 70);
+            padding: 12px 15px;
+            text-align: left;
+            border: 1px solid #ddd;
+            position: sticky;
+            top: 0;
+        }
+
+        .analysis-table td {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            vertical-align: top;
+        }
+
+        .time-column {
+            font-weight: bold;
+            background-color:rgb(36, 36, 36);
+            min-width: 80px;
+        }
+
+        .transcription-column {
+            min-width: 200px;
+            max-width: 300px;
+        }
+
+        .sentiment-column, .emotion-column, .pitch-column {
+            min-width: 100px;
+        }
+
+        .highlight-new {
+            background-color:rgb(74, 72, 65);
+            padding: 2px 4px;
+            border-radius: 3px;
+            transition: background-color 1.5s ease;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            margin-bottom: 30px;
+        }
+
+        .analysis-section h3 {
+            margin-top: 25px;
+            padding-left: 10px;
+            border-left: 4px solid #4682B4;
+        }
+    </style>
 </head>
 <div class="dashboard">
     <header class="dashboard-header">
@@ -89,58 +146,34 @@
             </div>
         </div>
     </div>
-    <!-- Analysis Results Section -->
+    
+    <!-- New Analysis Results Section with Table -->
     <div class="analysis-section">
         <div class="card-header">
             <i class="fas fa-chart-line"></i>
             <h2>Analysis Results</h2>
         </div>
-        <div class="results-container">
+        
+        <div id="analysis-container">
             {% if audio_files %}
                 {% for audio in audio_files %}
-                <div class="analysis-card" id="analysis-{{ audio.id }}">
-                    <div class="analysis-header">
-                        <h3>{{ audio.audio.name }}</h3>
-                    </div>
-                    <div class="analysis-body">
-                        <div class="analysis-item">
-                            <i class="fas fa-file-alt"></i>
-                            <div class="analysis-content">
-                                <h4>Transcription</h4>
-                                <p id="transcription-{{ audio.id }}"></p>
-                            </div>
-                        </div>
-                        <div class="analysis-item">
-                            <i class="fas fa-key"></i>
-                            <div class="analysis-content">
-                                <h4>Sentiment</h4>
-                                <p id="sentiment-{{ audio.id }}"></p>
-                            </div>
-                        </div>
-                        <div class="analysis-item">
-                            <i class="fas fa-smile"></i>
-                            <div class="analysis-content">
-                                <h4>Emotion</h4>
-                                <p id="emotion-{{ audio.id }}"></p>
-                            </div>
-                        </div>
-                        <div class="analysis-item">
-                            <i class="fas fa-music"></i>
-                            <div class="analysis-content">
-                                <h4>Pitch</h4>
-                                <p id="pitch-{{ audio.id }}"></p>
-                                <p id="pitch-history-{{ audio.id }}"></p>
-                            </div>
-                        </div>
-                        <div class="analysis-item">
-                            <i class="fas fa-clock"></i>
-                            <div class="analysis-content">
-                                <h4>Time</h4>
-                                <p id="audio-time-intervals-{{ audio.id }}"></p> <!-- Display the time intervals here -->
-                            </div>
-                        </div>
-                        
-                        
+                <div class="analysis-file-container">
+                    <h3>{{ audio.audio.name }}</h3>
+                    <div class="table-responsive">
+                        <table class="analysis-table" id="analysis-table-{{ audio.id }}">
+                            <thead>
+                                <tr>
+                                    <th class="time-column">Time Interval</th>
+                                    <th class="transcription-column">Transcription</th>
+                                    <th class="sentiment-column">Sentiment</th>
+                                    <th class="emotion-column">Emotion</th>
+                                    <th class="pitch-column">Pitch</th>
+                                </tr>
+                            </thead>
+                            <tbody id="analysis-body-{{ audio.id }}">
+                                <!-- Rows will be added here dynamically -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
                 {% endfor %}
@@ -154,138 +187,147 @@
     </div>
 </div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            // Handling the audio time intervals
-            document.querySelectorAll("audio").forEach(audioElement => {
-                const audioId = audioElement.getAttribute("id").split("-")[1];
-    
-                // Ensure the audio's metadata is loaded before accessing duration
-                audioElement.addEventListener("loadedmetadata", function () {
-                    const audioDuration = Math.floor(audioElement.duration); // Get the audio duration in seconds
-                    const interval = 5; // Set interval to 5 seconds
-                    let timeIntervals = [];
-                    let lastInterval = -interval; // Initialize to a value less than interval to start with the first one
-    
-                    // Log audio duration for debugging
-                    console.log(`Audio ID: ${audioId}, Duration: ${audioDuration}s`);
-    
-                    // Generate time intervals only after 5 seconds
-                    audioElement.addEventListener("timeupdate", function () {
-                        const currentTime = Math.floor(audioElement.currentTime);
-                        
-                        if (currentTime - lastInterval >= interval) {
-                            let start = currentTime;
-                            let end = currentTime + interval > audioDuration ? audioDuration : currentTime + interval;
-                            timeIntervals.push(`${start}-${end}s`);
-    
-                            // Update the last interval value
-                            lastInterval = currentTime;
-    
-                            // Log time intervals for debugging
-                            console.log(`Time Intervals for Audio ID: ${audioId} - ${timeIntervals.join(", ")}`);
-    
-                            // Display the time intervals for this specific audio element
-                            const timeDisplayElement = document.getElementById(`audio-time-intervals-${audioId}`);
-                            if (timeDisplayElement) {
-                                timeDisplayElement.innerHTML = timeIntervals.join(", ");
-                            } else {
-                                console.error(`Time intervals element not found for audio ID: ${audioId}`);
-                            }
-                        }
-                    });
-                });
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Set up time interval analysis for each audio element
+        document.querySelectorAll("audio").forEach(audioElement => {
+            const audioId = audioElement.getAttribute("id").split("-")[1];
+            setupTimeIntervalAnalysis(audioElement, audioId);
+        });
+        
+        // Handle details button click (if you have this functionality)
+        document.querySelectorAll(".details-btn").forEach(button => {
+            button.addEventListener("click", function() {
+                const audioId = this.getAttribute("data-audio-id");
+                // Your existing details button functionality
             });
         });
-    
-        document.addEventListener("DOMContentLoaded", function () {
-            // Handling the time update and fetching transcription, emotion, sentiment, etc.
-            document.querySelectorAll("audio").forEach(audioElement => {
-                const audioId = audioElement.getAttribute("id").split("-")[1];
-                let lastQueriedTime = -1;
-                const queryInterval = 5; // Fetch new data every 3 seconds
-    
-                let transcriptHistory = [];
-                let emotionHistory = [];
-                let sentimentHistory = [];
-                let pitchCategories = []; // Store pitch categories: Hard, Normal, Low
-    
-                audioElement.addEventListener("timeupdate", function () {
-                    const currentTime = Math.floor(audioElement.currentTime);
-    
-                    if (currentTime % queryInterval === 0 && currentTime !== lastQueriedTime) {
-                        lastQueriedTime = currentTime;
-    
-                        // ✅ Fetch Transcription
-                        fetch(`/analyze_audio/${audioId}/?time=${currentTime}`, { method: "GET" })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.error) {
-                                    console.error("❌ Transcription Error:", data.error);
-                                    return;
-                                }
-    
-                                let newText = data.transcript;
-                                transcriptHistory.push(`<span class="highlight-new">${newText}</span>`);
-                                document.getElementById(`transcription-${audioId}`).innerHTML = transcriptHistory.join(" ");
-    
-                                // ✅ Fetch Emotion & Sentiment Separately
-                                fetch(`/analyze_text/?text=${encodeURIComponent(newText)}`, { method: "GET" })
-                                    .then(response => response.json())
-                                    .then(analysisData => {
-                                        if (analysisData.error) {
-                                            console.error("❌ Analysis Error:", analysisData.error);
-                                            return;
-                                        }
-    
-                                        let newEmotion = analysisData.emotion || "Neutral";
-                                        emotionHistory.push(`<span class="highlight-new">${newEmotion}</span>`);
-                                        document.getElementById(`emotion-${audioId}`).innerHTML = emotionHistory.join(", ");
-    
-                                        let newSentiment = analysisData.sentiment || "Neutral";
-                                        sentimentHistory.push(`<span class="highlight-new">${newSentiment}</span>`);
-                                        document.getElementById(`sentiment-${audioId}`).innerHTML = sentimentHistory.join(", ");
-                                    })
-                                    .catch(error => console.error("❌ Analysis Fetch error:", error));
-                            })
-                            .catch(error => console.error("❌ Fetch error:", error));
-    
-                        // ✅ Fetch Pitch Data
-                        fetch(`/extract_pitch/${audioId}/?time=${currentTime}`, { method: "GET" })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.error) {
-                                    console.error("❌ Pitch Error:", data.error);
-                                    document.getElementById(`pitch-${audioId}`).innerText = "N/A";
-                                    return;
-                                }
-    
-                                const currentPitch = data.avg_pitch;
-                                let pitchLabel = "";
-    
-                                // Classify pitch into categories based on value
-                                if (currentPitch > 200) {
-                                    pitchLabel = "Hard";
-                                } else if (currentPitch >= 160 && currentPitch <= 200) {
-                                    pitchLabel = "Normal";
-                                } else {
-                                    pitchLabel = "Low";
-                                }
-    
-                                // Store pitch category in the list
-                                pitchCategories.push(pitchLabel);
-    
-                                // Update the displayed pitch list
-                                document.getElementById(`pitch-${audioId}`).innerText = `Pitch: ${pitchCategories.join(", ")}`;
-                            })
-                            .catch(error => console.error("❌ Fetch error:", error));
-                    }
-                });
-            });
+    });
+
+    function setupTimeIntervalAnalysis(audioElement, audioId) {
+        let lastQueriedTime = -1;
+        const queryInterval = 5; // Fetch new data every 5 seconds
+        
+        // Track time updates and fetch data
+        audioElement.addEventListener("timeupdate", function() {
+            const currentTime = Math.floor(audioElement.currentTime);
+            
+            // Check if we need to query for new data at 5-second intervals
+            if (currentTime % queryInterval === 0 && currentTime !== lastQueriedTime && currentTime > 0) {
+                lastQueriedTime = currentTime;
+                const timeStart = currentTime - queryInterval;
+                const timeEnd = currentTime;
+                const timeInterval = `${timeStart}-${timeEnd}s`;
+                
+                // Create a new row for this time interval if it doesn't exist
+                let tableBody = document.getElementById(`analysis-body-${audioId}`);
+                let existingRow = document.getElementById(`row-${audioId}-${timeInterval}`);
+                
+                if (!existingRow) {
+                    let newRow = document.createElement('tr');
+                    newRow.id = `row-${audioId}-${timeInterval}`;
+                    newRow.innerHTML = `
+                        <td class="time-column">${timeInterval}</td>
+                        <td class="transcription-column" id="transcription-${audioId}-${timeInterval}">Loading...</td>
+                        <td class="sentiment-column" id="sentiment-${audioId}-${timeInterval}">Loading...</td>
+                        <td class="emotion-column" id="emotion-${audioId}-${timeInterval}">Loading...</td>
+                        <td class="pitch-column" id="pitch-${audioId}-${timeInterval}">Loading...</td>
+                    `;
+                    tableBody.appendChild(newRow);
+                }
+                
+                // Fetch transcription
+                fetchTranscription(audioId, timeStart, timeInterval);
+                
+                // Fetch pitch data
+                fetchPitchData(audioId, timeStart, timeInterval);
+            }
         });
-    </script>
+    }
     
-
-
+    function fetchTranscription(audioId, startTime, timeInterval) {
+        fetch(`/analyze_audio/${audioId}/?time=${startTime}`, { method: "GET" })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error("❌ Transcription Error:", data.error);
+                    document.getElementById(`transcription-${audioId}-${timeInterval}`).innerHTML = "No speech detected";
+                    return;
+                }
+                
+                let newText = data.transcript;
+                document.getElementById(`transcription-${audioId}-${timeInterval}`).innerHTML = 
+                    `<span class="highlight-new">${newText}</span>`;
+                
+                // Now fetch emotion and sentiment based on this transcription
+                fetchEmotionSentiment(audioId, newText, timeInterval);
+            })
+            .catch(error => {
+                console.error("❌ Fetch error:", error);
+                document.getElementById(`transcription-${audioId}-${timeInterval}`).innerHTML = "Error fetching data";
+            });
+    }
+    
+    function fetchEmotionSentiment(audioId, text, timeInterval) {
+        if (!text || text.trim() === "") {
+            document.getElementById(`sentiment-${audioId}-${timeInterval}`).innerHTML = "N/A";
+            document.getElementById(`emotion-${audioId}-${timeInterval}`).innerHTML = "N/A";
+            return;
+        }
+        
+        fetch(`/analyze_text/?text=${encodeURIComponent(text)}`, { method: "GET" })
+            .then(response => response.json())
+            .then(analysisData => {
+                if (analysisData.error) {
+                    console.error("❌ Analysis Error:", analysisData.error);
+                    return;
+                }
+                
+                let emotion = analysisData.emotion || "Neutral";
+                let sentiment = analysisData.sentiment || "Neutral";
+                
+                document.getElementById(`emotion-${audioId}-${timeInterval}`).innerHTML = 
+                    `<span class="highlight-new">${emotion}</span>`;
+                document.getElementById(`sentiment-${audioId}-${timeInterval}`).innerHTML = 
+                    `<span class="highlight-new">${sentiment}</span>`;
+            })
+            .catch(error => {
+                console.error("❌ Analysis Fetch error:", error);
+                document.getElementById(`sentiment-${audioId}-${timeInterval}`).innerHTML = "Error";
+                document.getElementById(`emotion-${audioId}-${timeInterval}`).innerHTML = "Error";
+            });
+    }
+    
+    function fetchPitchData(audioId, startTime, timeInterval) {
+        fetch(`/extract_pitch/${audioId}/?time=${startTime}`, { method: "GET" })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error("❌ Pitch Error:", data.error);
+                    document.getElementById(`pitch-${audioId}-${timeInterval}`).innerHTML = "N/A";
+                    return;
+                }
+                
+                const currentPitch = data.avg_pitch;
+                let pitchLabel = "";
+                
+                // Classify pitch
+                if (currentPitch > 160) {
+                    pitchLabel = "High";
+                } else if (currentPitch >= 120 && currentPitch <= 160) {
+                    pitchLabel = "Normal";
+                } else {
+                    pitchLabel = "Low";
+                }
+                
+                document.getElementById(`pitch-${audioId}-${timeInterval}`).innerHTML = 
+                    `<span class="highlight-new">${pitchLabel} (${currentPitch.toFixed(1)}Hz)</span>`;
+            })
+            .catch(error => {
+                console.error("❌ Fetch error:", error);
+                document.getElementById(`pitch-${audioId}-${timeInterval}`).innerHTML = "Error";
+            });
+    }
+</script>
 
 {% endblock %}
