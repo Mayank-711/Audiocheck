@@ -133,7 +133,7 @@
                             </div>
                         </div>
                         <div class="analysis-item">
-                            <i class="fas fa-music"></i>
+                            <i class="fas fa-clock"></i>
                             <div class="analysis-content">
                                 <h4>Time</h4>
                                 <p id="audio-time-intervals-{{ audio.id }}"></p> <!-- Display the time intervals here -->
@@ -264,9 +264,9 @@
                                 let pitchLabel = "";
     
                                 // Classify pitch into categories based on value
-                                if (currentPitch > 160) {
+                                if (currentPitch > 200) {
                                     pitchLabel = "Hard";
-                                } else if (currentPitch >= 120 && currentPitch <= 160) {
+                                } else if (currentPitch >= 160 && currentPitch <= 200) {
                                     pitchLabel = "Normal";
                                 } else {
                                     pitchLabel = "Low";
