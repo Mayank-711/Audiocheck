@@ -31,6 +31,7 @@ urlpatterns = [
     path("analyze_audio/<int:audio_id>/",analyze_audio,name='analyze_audio'),
     path("extract_pitch/<int:audio_id>/",extract_pitch_view,name='extract_pitch'),
     path('analyze_text/', analyze_text, name='analyze_text'),  # ✅ Add new endpoint
+    path('check_accuracy/',check_accuracy,name='check_accuracy')
 
 ]
 

@@ -159,11 +159,13 @@
                 {% for audio in audio_files %}
                 <div class="analysis-file-container">
                     <h3>{{ audio.audio.name }}</h3>
+                    <button class="accuracy-btn" onclick="checkAccuracy('{{ audio.id }}')">Check Accuracy</button>
                     <div class="table-responsive">
                         <table class="analysis-table" id="analysis-table-{{ audio.id }}">
                             <thead>
                                 <tr>
                                     <th class="time-column">Time Interval</th>
+                                    <th class="speaker-column">Speaker</th>
                                     <th class="transcription-column">Transcription</th>
                                     <th class="sentiment-column">Sentiment</th>
                                     <th class="emotion-column">Emotion</th>
@@ -237,6 +239,7 @@ function setupTimeIntervalAnalysis(audioElement, audioId) {
                 newRow.id = `row-${audioId}-${timeInterval}`;
                 newRow.innerHTML = `
                     <td class="time-column">${timeInterval}</td>
+                    <td class="speaker-column" id="speaker-${audioId}-${timeInterval}">Loading...</td>
                     <td class="transcription-column" id="transcription-${audioId}-${timeInterval}">Loading...</td>
                     <td class="sentiment-column" id="sentiment-${audioId}-${timeInterval}">Loading...</td>
                     <td class="emotion-column" id="emotion-${audioId}-${timeInterval}">Loading...</td>
@@ -265,9 +268,11 @@ function fetchTranscription(audioId, startTime, timeInterval) {
             }
 
             let newText = data.transcript;
+            let newSpeaker = data.Speaker;
             document.getElementById(`transcription-${audioId}-${timeInterval}`).innerHTML = 
                 `<span class="highlight-new">${newText}</span>`;
-
+            document.getElementById(`speaker-${audioId}-${timeInterval}`).innerHTML = 
+                `<span class="highlight-new">${newSpeaker}</span>`;
             if (containsBadWords(newText)) {
                 highlightRowAsRed(audioId, timeInterval);
             }
@@ -352,6 +357,31 @@ function highlightRowAsRed(audioId, timeInterval) {
     if (row) {
         row.style.backgroundColor = "red";
     }
+}
+function checkAccuracy(audioId) {
+    if (!audioId) {
+        alert("Invalid Audio ID!");
+        return;
+    }
+
+    fetch(`/check_accuracy/?audio_id=${audioId}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert("Error: " + data.error);
+        } else {
+            alert(`Call Accuracy: ${data.accuracy}%`);
+        }
+    })
+    .catch(error => {
+        console.error("Error fetching accuracy:", error);
+        alert("Failed to check accuracy.");
+    });
 }
 
 </script>

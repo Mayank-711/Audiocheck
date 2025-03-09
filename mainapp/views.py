@@ -1,3 +1,4 @@
+import json
 import tempfile
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
@@ -210,7 +211,7 @@ def analyze_audio(request, audio_id):
         if not transcript_text:
             return JsonResponse({"error": "No transcribed text detected"}, status=400)
 
-        return JsonResponse({"transcript": transcript_text},)
+        return JsonResponse({"transcript": transcript_text,"Speaker":speaker},)
 
     except AudioFile.DoesNotExist:
         return JsonResponse({"error": "Audio file not found in database"}, status=404)
@@ -340,3 +341,61 @@ def extract_pitch_view(request, audio_id):
     except Exception as e:
         #print(f"❌ Unexpected Error: {str(e)}")  # #print full error in console
         return JsonResponse({"error": str(e)}, status=500)
+    
+
+
+
+import whisper
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from transformers import pipeline
+from .models import AudioFile
+
+# Load models
+whisper_model = whisper.load_model("base")  # Adjust model size for better accuracy
+evaluator = pipeline("text-classification", model="facebook/bart-large-mnli")
+
+@csrf_exempt
+def check_accuracy(request):
+    if request.method == "GET":
+        audio_id = request.GET.get("audio_id")
+
+        # Validate audio_id
+        if not audio_id or not audio_id.isdigit():
+            return JsonResponse({"error": "Invalid audio ID"}, status=400)
+
+        try:
+            audio_obj = AudioFile.objects.get(id=int(audio_id))
+            audio_path = audio_obj.audio.path  # Use `audio` instead of `file`
+        except AudioFile.DoesNotExist:
+            return JsonResponse({"error": "Audio file not found"}, status=404)
+        except Exception as e:
+            return JsonResponse({"error": f"Error retrieving audio file: {str(e)}"}, status=500)
+
+        # Transcribe audio using Whisper
+        try:
+            transcript_data = whisper_model.transcribe(audio_path)
+            transcript_text = transcript_data.get("text", "").strip()
+        except Exception as e:
+            return JsonResponse({"error": f"Whisper transcription failed: {str(e)}"}, status=500)
+
+        if not transcript_text:
+            return JsonResponse({"error": "No speech detected in audio"}, status=400)
+
+        # Perform text classification
+        try:
+            evaluation_result = evaluator(transcript_text)
+        except Exception as e:
+            return JsonResponse({"error": f"Text classification failed: {str(e)}"}, status=500)
+
+        # Calculate accuracy
+        accuracy = round(evaluation_result[0]["score"] * 100, 2)
+
+        return JsonResponse({
+            "audio_id": audio_id,
+            "transcript": transcript_text,
+            "classification": evaluation_result,
+            "accuracy": accuracy
+        })
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)
