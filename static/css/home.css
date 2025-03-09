@@ -297,14 +297,7 @@
     opacity: 1;
   }
   
-  .spotlight {
-    grid-column: span 2;
-    background: linear-gradient(135deg, 
-      rgba(var(--primary-color-rgb), 0.08), 
-      rgba(var(--secondary-color-rgb, var(--primary-color-rgb)), 0.08));
-    border-color: rgba(var(--primary-color-rgb), 0.2);
-    min-height: 340px;
-  }
+  
   
   .spotlight .icon-container {
     width: 60px;

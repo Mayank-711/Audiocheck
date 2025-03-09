@@ -22,7 +22,7 @@
     position: absolute;
     width: 2000px;
     height: 3000px;
-    background: linear-gradient(-45deg, #00bcd4, #00bcd4);
+    background: linear-gradient(-45deg, #040040, #040040);
     border-radius: 50%;
     top: -10%;
     right: 48%;
@@ -74,7 +74,7 @@
   
   .title {
     font-size: 2.2rem;
-    color: #444;
+    color: #b6b2b2;
     margin-bottom: 10px;
   }
   
