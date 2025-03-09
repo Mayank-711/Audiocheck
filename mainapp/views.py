@@ -194,10 +194,23 @@ def analyze_audio(request, audio_id):
         os.remove(tmp_audio_path)  
 
         transcript_text = result.get("text", "").strip()
+        speaker = "Customer" if (
+            "?" in transcript_text or "I need" in transcript_text or 
+            "Could you" in transcript_text or "Can you" in transcript_text or
+            "Please" in transcript_text or 
+            "Help" in transcript_text or 
+            "I would like" in transcript_text or 
+            "I'm looking for" in transcript_text or 
+            "I have a problem" in transcript_text or 
+            "What is" in transcript_text or 
+            "Can you help" in transcript_text
+        ) else "Call Center"
+
+        print(speaker, ': ', transcript_text)
         if not transcript_text:
             return JsonResponse({"error": "No transcribed text detected"}, status=400)
 
-        return JsonResponse({"transcript": transcript_text})
+        return JsonResponse({"transcript": transcript_text},)
 
     except AudioFile.DoesNotExist:
         return JsonResponse({"error": "Audio file not found in database"}, status=404)
@@ -215,7 +228,6 @@ def analyze_sentiment(transcript_text):
     sentiment_result = sentiment_classifier(transcript_text, candidate_labels=sentiment_labels)
     return sentiment_result["labels"][0]
 
-@csrf_exempt
 def analyze_text(request):
     try:
         transcript_text = request.GET.get("text", "").strip()
@@ -225,6 +237,8 @@ def analyze_text(request):
         detected_emotion = analyze_emotion(transcript_text)
         detected_sentiment = analyze_sentiment(transcript_text)
 
+        
+
         return JsonResponse({
             "emotion": detected_emotion,
             "sentiment": detected_sentiment
@@ -232,6 +246,7 @@ def analyze_text(request):
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+
 
 
 def extract_pitch(y, sr):

@@ -188,146 +188,172 @@
 </div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        // Set up time interval analysis for each audio element
-        document.querySelectorAll("audio").forEach(audioElement => {
-            const audioId = audioElement.getAttribute("id").split("-")[1];
-            setupTimeIntervalAnalysis(audioElement, audioId);
-        });
-        
-        // Handle details button click (if you have this functionality)
-        document.querySelectorAll(".details-btn").forEach(button => {
-            button.addEventListener("click", function() {
-                const audioId = this.getAttribute("data-audio-id");
-                // Your existing details button functionality
-            });
-        });
+    let badWords = [
+    "Abortion", "Adult", "Asshole", "Bitch", "Bastard", "Bimbo", "Bitch", "Balls", 
+    "Bullshit", "Cunt", "Cock", "Cocksucker", "Crap", "Cunt", "Damn", "Dick", "Damnation", 
+    "Douche", "Dickhead", "Dipshit", "F***", "F***face", "F***head", "Fucker", "Fuktard", 
+    "Goddamn", "Goddamn it", "Hell", "Hoe", "Hobag", "Idiot", "Jackass", "Jerk", "Kike", 
+    "Motherfucker", "Motherfucker", "Pussy", "Prick", "Piss", "Pisshead", "Pimp", "Retard", 
+    "Shit", "Shithead", "Slut", "Son of a bitch", "Stupid", "Tits", "Whore", "Wimp"
+];
+
+document.addEventListener("DOMContentLoaded", function() {
+    // Set up time interval analysis for each audio element
+    document.querySelectorAll("audio").forEach(audioElement => {
+        const audioId = audioElement.getAttribute("id").split("-")[1];
+        setupTimeIntervalAnalysis(audioElement, audioId);
     });
 
-    function setupTimeIntervalAnalysis(audioElement, audioId) {
-        let lastQueriedTime = -1;
-        const queryInterval = 5; // Fetch new data every 5 seconds
-        
-        // Track time updates and fetch data
-        audioElement.addEventListener("timeupdate", function() {
-            const currentTime = Math.floor(audioElement.currentTime);
-            
-            // Check if we need to query for new data at 5-second intervals
-            if (currentTime % queryInterval === 0 && currentTime !== lastQueriedTime && currentTime > 0) {
-                lastQueriedTime = currentTime;
-                const timeStart = currentTime - queryInterval;
-                const timeEnd = currentTime;
-                const timeInterval = `${timeStart}-${timeEnd}s`;
-                
-                // Create a new row for this time interval if it doesn't exist
-                let tableBody = document.getElementById(`analysis-body-${audioId}`);
-                let existingRow = document.getElementById(`row-${audioId}-${timeInterval}`);
-                
-                if (!existingRow) {
-                    let newRow = document.createElement('tr');
-                    newRow.id = `row-${audioId}-${timeInterval}`;
-                    newRow.innerHTML = `
-                        <td class="time-column">${timeInterval}</td>
-                        <td class="transcription-column" id="transcription-${audioId}-${timeInterval}">Loading...</td>
-                        <td class="sentiment-column" id="sentiment-${audioId}-${timeInterval}">Loading...</td>
-                        <td class="emotion-column" id="emotion-${audioId}-${timeInterval}">Loading...</td>
-                        <td class="pitch-column" id="pitch-${audioId}-${timeInterval}">Loading...</td>
-                    `;
-                    tableBody.appendChild(newRow);
-                }
-                
-                // Fetch transcription
-                fetchTranscription(audioId, timeStart, timeInterval);
-                
-                // Fetch pitch data
-                fetchPitchData(audioId, timeStart, timeInterval);
-            }
+    // Handle details button click (if you have this functionality)
+    document.querySelectorAll(".details-btn").forEach(button => {
+        button.addEventListener("click", function() {
+            const audioId = this.getAttribute("data-audio-id");
+            // Your existing details button functionality
         });
-    }
-    
-    function fetchTranscription(audioId, startTime, timeInterval) {
-        fetch(`/analyze_audio/${audioId}/?time=${startTime}`, { method: "GET" })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    console.error("❌ Transcription Error:", data.error);
-                    document.getElementById(`transcription-${audioId}-${timeInterval}`).innerHTML = "No speech detected";
-                    return;
-                }
-                
-                let newText = data.transcript;
-                document.getElementById(`transcription-${audioId}-${timeInterval}`).innerHTML = 
-                    `<span class="highlight-new">${newText}</span>`;
-                
-                // Now fetch emotion and sentiment based on this transcription
-                fetchEmotionSentiment(audioId, newText, timeInterval);
-            })
-            .catch(error => {
-                console.error("❌ Fetch error:", error);
-                document.getElementById(`transcription-${audioId}-${timeInterval}`).innerHTML = "Error fetching data";
-            });
-    }
-    
-    function fetchEmotionSentiment(audioId, text, timeInterval) {
-        if (!text || text.trim() === "") {
-            document.getElementById(`sentiment-${audioId}-${timeInterval}`).innerHTML = "N/A";
-            document.getElementById(`emotion-${audioId}-${timeInterval}`).innerHTML = "N/A";
-            return;
+    });
+});
+
+function setupTimeIntervalAnalysis(audioElement, audioId) {
+    let lastQueriedTime = -1;
+    const queryInterval = 5; // Fetch new data every 5 seconds
+
+    // Track time updates and fetch data
+    audioElement.addEventListener("timeupdate", function() {
+        const currentTime = Math.floor(audioElement.currentTime);
+
+        // Check if we need to query for new data at 5-second intervals
+        if (currentTime % queryInterval === 0 && currentTime !== lastQueriedTime && currentTime > 0) {
+            lastQueriedTime = currentTime;
+            const timeStart = currentTime - queryInterval;
+            const timeEnd = currentTime;
+            const timeInterval = `${timeStart}-${timeEnd}s`;
+
+            // Create a new row for this time interval if it doesn't exist
+            let tableBody = document.getElementById(`analysis-body-${audioId}`);
+            let existingRow = document.getElementById(`row-${audioId}-${timeInterval}`);
+
+            if (!existingRow) {
+                let newRow = document.createElement('tr');
+                newRow.id = `row-${audioId}-${timeInterval}`;
+                newRow.innerHTML = `
+                    <td class="time-column">${timeInterval}</td>
+                    <td class="transcription-column" id="transcription-${audioId}-${timeInterval}">Loading...</td>
+                    <td class="sentiment-column" id="sentiment-${audioId}-${timeInterval}">Loading...</td>
+                    <td class="emotion-column" id="emotion-${audioId}-${timeInterval}">Loading...</td>
+                    <td class="pitch-column" id="pitch-${audioId}-${timeInterval}">Loading...</td>
+                `;
+                tableBody.appendChild(newRow);
+            }
+
+            // Fetch transcription
+            fetchTranscription(audioId, timeStart, timeInterval);
+
+            // Fetch pitch data
+            fetchPitchData(audioId, timeStart, timeInterval);
         }
-        
-        fetch(`/analyze_text/?text=${encodeURIComponent(text)}`, { method: "GET" })
-            .then(response => response.json())
-            .then(analysisData => {
-                if (analysisData.error) {
-                    console.error("❌ Analysis Error:", analysisData.error);
-                    return;
-                }
-                
-                let emotion = analysisData.emotion || "Neutral";
-                let sentiment = analysisData.sentiment || "Neutral";
-                
-                document.getElementById(`emotion-${audioId}-${timeInterval}`).innerHTML = 
-                    `<span class="highlight-new">${emotion}</span>`;
-                document.getElementById(`sentiment-${audioId}-${timeInterval}`).innerHTML = 
-                    `<span class="highlight-new">${sentiment}</span>`;
-            })
-            .catch(error => {
-                console.error("❌ Analysis Fetch error:", error);
-                document.getElementById(`sentiment-${audioId}-${timeInterval}`).innerHTML = "Error";
-                document.getElementById(`emotion-${audioId}-${timeInterval}`).innerHTML = "Error";
-            });
+    });
+}
+
+function fetchTranscription(audioId, startTime, timeInterval) {
+    fetch(`/analyze_audio/${audioId}/?time=${startTime}`, { method: "GET" })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error("❌ Transcription Error:", data.error);
+                document.getElementById(`transcription-${audioId}-${timeInterval}`).innerHTML = "No speech detected";
+                return;
+            }
+
+            let newText = data.transcript;
+            document.getElementById(`transcription-${audioId}-${timeInterval}`).innerHTML = 
+                `<span class="highlight-new">${newText}</span>`;
+
+            if (containsBadWords(newText)) {
+                highlightRowAsRed(audioId, timeInterval);
+            }
+
+            // Now fetch emotion and sentiment based on this transcription
+            fetchEmotionSentiment(audioId, newText, timeInterval);
+        })
+        .catch(error => {
+            console.error("❌ Fetch error:", error);
+            document.getElementById(`transcription-${audioId}-${timeInterval}`).innerHTML = "Error fetching data";
+        });
+}
+
+function fetchEmotionSentiment(audioId, text, timeInterval) {
+    if (!text || text.trim() === "") {
+        document.getElementById(`sentiment-${audioId}-${timeInterval}`).innerHTML = "N/A";
+        document.getElementById(`emotion-${audioId}-${timeInterval}`).innerHTML = "N/A";
+        return;
     }
-    
-    function fetchPitchData(audioId, startTime, timeInterval) {
-        fetch(`/extract_pitch/${audioId}/?time=${startTime}`, { method: "GET" })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    console.error("❌ Pitch Error:", data.error);
-                    document.getElementById(`pitch-${audioId}-${timeInterval}`).innerHTML = "N/A";
-                    return;
-                }
-                
-                const currentPitch = data.avg_pitch;
-                let pitchLabel = "";
-                
-                // Classify pitch
-                if (currentPitch > 160) {
-                    pitchLabel = "High";
-                } else if (currentPitch >= 120 && currentPitch <= 160) {
-                    pitchLabel = "Normal";
-                } else {
-                    pitchLabel = "Low";
-                }
-                
-                document.getElementById(`pitch-${audioId}-${timeInterval}`).innerHTML = 
-                    `<span class="highlight-new">${pitchLabel} (${currentPitch.toFixed(1)}Hz)</span>`;
-            })
-            .catch(error => {
-                console.error("❌ Fetch error:", error);
-                document.getElementById(`pitch-${audioId}-${timeInterval}`).innerHTML = "Error";
-            });
+
+    fetch(`/analyze_text/?text=${encodeURIComponent(text)}`, { method: "GET" })
+        .then(response => response.json())
+        .then(analysisData => {
+            if (analysisData.error) {
+                console.error("❌ Analysis Error:", analysisData.error);
+                return;
+            }
+
+            let emotion = analysisData.emotion || "Neutral";
+            let sentiment = analysisData.sentiment || "Neutral";
+
+            document.getElementById(`emotion-${audioId}-${timeInterval}`).innerHTML = 
+                `<span class="highlight-new">${emotion}</span>`;
+            document.getElementById(`sentiment-${audioId}-${timeInterval}`).innerHTML = 
+                `<span class="highlight-new">${sentiment}</span>`;
+        })
+        .catch(error => {
+            console.error("❌ Analysis Fetch error:", error);
+            document.getElementById(`sentiment-${audioId}-${timeInterval}`).innerHTML = "Error";
+            document.getElementById(`emotion-${audioId}-${timeInterval}`).innerHTML = "Error";
+        });
+}
+
+function fetchPitchData(audioId, startTime, timeInterval) {
+    fetch(`/extract_pitch/${audioId}/?time=${startTime}`, { method: "GET" })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error("❌ Pitch Error:", data.error);
+                document.getElementById(`pitch-${audioId}-${timeInterval}`).innerHTML = "N/A";
+                return;
+            }
+
+            const currentPitch = data.avg_pitch;
+            let pitchLabel = "";
+
+            // Classify pitch
+            if (currentPitch > 200) {
+                pitchLabel = "High";
+            } else if (currentPitch >= 160 && currentPitch <= 200) {
+                pitchLabel = "Normal";
+            } else {
+                pitchLabel = "Low";
+            }
+
+            document.getElementById(`pitch-${audioId}-${timeInterval}`).innerHTML = 
+                `<span class="highlight-new">${pitchLabel} (${currentPitch.toFixed(1)}Hz)</span>`;
+        })
+        .catch(error => {
+            console.error("❌ Fetch error:", error);
+            document.getElementById(`pitch-${audioId}-${timeInterval}`).innerHTML = "Error";
+        });
+}
+
+function containsBadWords(text) {
+    return badWords.some(word => text.toLowerCase().includes(word.toLowerCase()));
+}
+
+// Function to highlight the row red if bad words are found
+function highlightRowAsRed(audioId, timeInterval) {
+    let row = document.getElementById(`row-${audioId}-${timeInterval}`);
+    if (row) {
+        row.style.backgroundColor = "red";
     }
+}
+
 </script>
 
 {% endblock %}
